@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Affiche ASPD</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="container">
+    <h2>Générer mon pass ASPD</h2>
+
+    <input class="btn-fil" type="file" id="photoInput" accept="image/*">
+    <div>
+      <input type="text" id="nameInput" placeholder="Nom et prénom">
+    <button type="button"  id="downloadBtn">Télécharger l'affiche</button>
+    </div>
+    <div>
+      <canvas id="posterCanvas" width="768" height="768"></canvas>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
