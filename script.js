@@ -25,7 +25,6 @@ photoInput.addEventListener('change', (e) => {
   reader.onload = function(evt) {
     userImage = new Image();
     userImage.onload = () => {
-      // Centrer l'image automatiquement au chargement
       userImageX = (canvas.width - userImage.width) / 2;
       userImageY = (canvas.height - userImage.height) / 2;
       userImageScale = 1;
@@ -41,6 +40,7 @@ photoInput.addEventListener('change', (e) => {
 
 nameInput.addEventListener('input', drawPoster);
 
+// Déplacement sur ordinateur
 canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
@@ -74,7 +74,7 @@ canvas.addEventListener('mouseleave', () => {
   dragging = false;
 });
 
-// Zoom avec la molette
+// Zoom avec la molette sur ordinateur
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
   const zoomSpeed = 0.1;
@@ -84,6 +84,64 @@ canvas.addEventListener('wheel', (e) => {
     userImageScale = Math.max(0.1, userImageScale - zoomSpeed);
   }
   drawPoster();
+});
+
+// Déplacement sur mobile (touches)
+canvas.addEventListener('touchstart', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.touches[0].clientX - rect.left;
+  const y = e.touches[0].clientY - rect.top;
+
+  const scaledWidth = userImage.width * userImageScale;
+  const scaledHeight = userImage.height * userImageScale;
+
+  if (x >= userImageX && x <= userImageX + scaledWidth &&
+      y >= userImageY && y <= userImageY + scaledHeight) {
+    dragging = true;
+    dragOffsetX = x - userImageX;
+    dragOffsetY = y - userImageY;
+  }
+});
+
+canvas.addEventListener('touchmove', (e) => {
+  if (dragging) {
+    const rect = canvas.getBoundingClientRect();
+    userImageX = e.touches[0].clientX - rect.left - dragOffsetX;
+    userImageY = e.touches[0].clientY - rect.top - dragOffsetY;
+    drawPoster();
+  }
+});
+
+canvas.addEventListener('touchend', () => {
+  dragging = false;
+});
+
+// Zoom avec un geste de pincement sur mobile
+let initialDistance = null;
+let initialScale = userImageScale;
+
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    const x1 = e.touches[0].clientX;
+    const y1 = e.touches[0].clientY;
+    const x2 = e.touches[1].clientX;
+    const y2 = e.touches[1].clientY;
+    initialDistance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    initialScale = userImageScale;
+  }
+});
+
+canvas.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2 && initialDistance) {
+    const x1 = e.touches[0].clientX;
+    const y1 = e.touches[0].clientY;
+    const x2 = e.touches[1].clientX;
+    const y2 = e.touches[1].clientY;
+    const currentDistance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+
+    userImageScale = initialScale * (currentDistance / initialDistance);
+    drawPoster();
+  }
 });
 
 function drawPoster() {
