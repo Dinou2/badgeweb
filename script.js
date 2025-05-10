@@ -10,7 +10,7 @@ background.src = 'y serai1.png';
 let userImage = new Image();
 let userImageX = 192;
 let userImageY = 230;
-let userImageSize = 384;
+let userImageScale = 1;
 
 let dragging = false;
 let dragOffsetX = 0;
@@ -24,7 +24,13 @@ photoInput.addEventListener('change', (e) => {
 
   reader.onload = function(evt) {
     userImage = new Image();
-    userImage.onload = drawPoster;
+    userImage.onload = () => {
+      // Centrer l'image automatiquement au chargement
+      userImageX = (canvas.width - userImage.width) / 2;
+      userImageY = (canvas.height - userImage.height) / 2;
+      userImageScale = 1;
+      drawPoster();
+    };
     userImage.src = evt.target.result;
   };
 
@@ -40,8 +46,11 @@ canvas.addEventListener('mousedown', (e) => {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
-  if (x >= userImageX && x <= userImageX + userImageSize &&
-      y >= userImageY && y <= userImageY + userImageSize) {
+  const scaledWidth = userImage.width * userImageScale;
+  const scaledHeight = userImage.height * userImageScale;
+
+  if (x >= userImageX && x <= userImageX + scaledWidth &&
+      y >= userImageY && y <= userImageY + scaledHeight) {
     dragging = true;
     dragOffsetX = x - userImageX;
     dragOffsetY = y - userImageY;
@@ -65,15 +74,31 @@ canvas.addEventListener('mouseleave', () => {
   dragging = false;
 });
 
+// Zoom avec la molette
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const zoomSpeed = 0.1;
+  if (e.deltaY < 0) {
+    userImageScale += zoomSpeed;
+  } else {
+    userImageScale = Math.max(0.1, userImageScale - zoomSpeed);
+  }
+  drawPoster();
+});
+
 function drawPoster() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   if (userImage.src) {
-    ctx.drawImage(userImage, userImageX, userImageY, userImageSize, userImageSize);
+    const scaledWidth = userImage.width * userImageScale;
+    const scaledHeight = userImage.height * userImageScale;
+    ctx.drawImage(userImage, userImageX, userImageY, scaledWidth, scaledHeight);
   }
+
   ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
   if (nameInput.value) {
-    ctx.font = '15px Futura Bk BT ';
+    ctx.font = '15px Futura Bk BT';
     ctx.fillStyle = '#000';
     ctx.textAlign = 'center';
     ctx.fillText(nameInput.value, canvas.width / 2, 550);
@@ -86,14 +111,3 @@ downloadBtn.addEventListener('click', () => {
   link.href = canvas.toDataURL();
   link.click();
 });
-
-// canvas.addEventListener('wheel', (e) => {
-//   e.preventDefault();
-//   const zoomSpeed = 20;
-//   if (e.deltaY < 0) {
-//     userImageSize += zoomSpeed;
-//   } else {
-//     userImageSize = Math.max(20, userImageSize - zoomSpeed);
-//   }
-//   drawPoster();
-// });
