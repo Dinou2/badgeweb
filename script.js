@@ -3,6 +3,7 @@ const ctx = canvas.getContext('2d');
 const photoInput = document.getElementById('photoInput');
 const nameInput = document.getElementById('nameInput');
 const downloadBtn = document.getElementById('downloadBtn');
+const zoomRange = document.getElementById('zoomRange'); // le slider de zoom
 
 const background = new Image();
 background.src = 'y serai1.png';
@@ -28,6 +29,7 @@ photoInput.addEventListener('change', (e) => {
       userImageX = (canvas.width - userImage.width) / 2;
       userImageY = (canvas.height - userImage.height) / 2;
       userImageScale = 1;
+      zoomRange.value = userImageScale;
       drawPoster();
     };
     userImage.src = evt.target.result;
@@ -40,7 +42,13 @@ photoInput.addEventListener('change', (e) => {
 
 nameInput.addEventListener('input', drawPoster);
 
-// Déplacement sur ordinateur
+// Slider de zoom
+zoomRange.addEventListener('input', () => {
+  userImageScale = parseFloat(zoomRange.value);
+  drawPoster();
+});
+
+// Déplacement souris
 canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
@@ -74,7 +82,7 @@ canvas.addEventListener('mouseleave', () => {
   dragging = false;
 });
 
-// Zoom avec la molette sur ordinateur
+// Zoom molette
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
   const zoomSpeed = 0.1;
@@ -83,10 +91,11 @@ canvas.addEventListener('wheel', (e) => {
   } else {
     userImageScale = Math.max(0.1, userImageScale - zoomSpeed);
   }
+  zoomRange.value = userImageScale.toFixed(2);
   drawPoster();
 });
 
-// Déplacement sur mobile (touches)
+// Touches mobile pour déplacer
 canvas.addEventListener('touchstart', (e) => {
   const rect = canvas.getBoundingClientRect();
   const x = e.touches[0].clientX - rect.left;
@@ -104,7 +113,7 @@ canvas.addEventListener('touchstart', (e) => {
 });
 
 canvas.addEventListener('touchmove', (e) => {
-  if (dragging) {
+  if (dragging && e.touches.length === 1) {
     const rect = canvas.getBoundingClientRect();
     userImageX = e.touches[0].clientX - rect.left - dragOffsetX;
     userImageY = e.touches[0].clientY - rect.top - dragOffsetY;
@@ -116,7 +125,7 @@ canvas.addEventListener('touchend', () => {
   dragging = false;
 });
 
-// Zoom avec un geste de pincement sur mobile
+// Zoom pincement mobile
 let initialDistance = null;
 let initialScale = userImageScale;
 
@@ -140,6 +149,7 @@ canvas.addEventListener('touchmove', (e) => {
     const currentDistance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 
     userImageScale = initialScale * (currentDistance / initialDistance);
+    zoomRange.value = userImageScale.toFixed(2);
     drawPoster();
   }
 });
