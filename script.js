@@ -3,7 +3,6 @@ const ctx = canvas.getContext('2d');
 const photoInput = document.getElementById('photoInput');
 const nameInput = document.getElementById('nameInput');
 const downloadBtn = document.getElementById('downloadBtn');
-const zoomSlider = document.getElementById('zoomSlider');
 
 const background = new Image();
 background.src = 'y serai1.png';
@@ -16,39 +15,52 @@ let userImageScale = 1;
 let dragging = false;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
-let initialDistance = null;
-let initialScale = userImageScale;
 
 background.onload = () => drawPoster();
 
 photoInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   const reader = new FileReader();
+
   reader.onload = function(evt) {
     userImage = new Image();
     userImage.onload = () => {
-      userImageX = (canvas.width - userImage.width) / 2;
-      userImageY = (canvas.height - userImage.height) / 2;
-      userImageScale = 1;
-      zoomSlider.value = 1;
+      // Réduire l'image à 30% de sa taille d'origine ou moins si elle est très grande
+      const maxWidth = canvas.width * 0.6;
+      const maxHeight = canvas.height * 0.6;
+      const scaleX = maxWidth / userImage.width;
+      const scaleY = maxHeight / userImage.height;
+      userImageScale = Math.min(scaleX, scaleY, 1); // pas plus grand que 1
+    
+      const scaledWidth = userImage.width * userImageScale;
+      const scaledHeight = userImage.height * userImageScale;
+      userImageX = (canvas.width - scaledWidth) / 2;
+      userImageY = (canvas.height - scaledHeight) / 2;
+    
+      zoomRange.value = userImageScale.toFixed(2);
       drawPoster();
     };
     userImage.src = evt.target.result;
   };
-  if (file) reader.readAsDataURL(file);
+
+  if (file) {
+    reader.readAsDataURL(file);
+  }
 });
 
 nameInput.addEventListener('input', drawPoster);
 
-// Mouse events (desktop)
+// Déplacement sur ordinateur
 canvas.addEventListener('mousedown', (e) => {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-  const w = userImage.width * userImageScale;
-  const h = userImage.height * userImageScale;
 
-  if (x >= userImageX && x <= userImageX + w && y >= userImageY && y <= userImageY + h) {
+  const scaledWidth = userImage.width * userImageScale;
+  const scaledHeight = userImage.height * userImageScale;
+
+  if (x >= userImageX && x <= userImageX + scaledWidth &&
+      y >= userImageY && y <= userImageY + scaledHeight) {
     dragging = true;
     dragOffsetX = x - userImageX;
     dragOffsetY = y - userImageY;
@@ -60,88 +72,97 @@ canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
     userImageX = e.clientX - rect.left - dragOffsetX;
     userImageY = e.clientY - rect.top - dragOffsetY;
-    requestAnimationFrame(drawPoster);
+    drawPoster();
   }
 });
 
-canvas.addEventListener('mouseup', () => dragging = false);
-canvas.addEventListener('mouseleave', () => dragging = false);
+canvas.addEventListener('mouseup', () => {
+  dragging = false;
+});
 
-// Wheel zoom (desktop)
+canvas.addEventListener('mouseleave', () => {
+  dragging = false;
+});
+
+// Zoom avec la molette sur ordinateur
 canvas.addEventListener('wheel', (e) => {
+  zoomRange.value = userImageScale.toFixed(2);
   e.preventDefault();
   const zoomSpeed = 0.1;
-  userImageScale += e.deltaY < 0 ? zoomSpeed : -zoomSpeed;
-  userImageScale = Math.max(0.1, userImageScale);
-  zoomSlider.value = userImageScale;
-  requestAnimationFrame(drawPoster);
-}, { passive: false });
-
-// Touch events (mobile)
-function onTouchStart(e) {
-  e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  if (e.touches.length === 1) {
-    const x = e.touches[0].clientX - rect.left;
-    const y = e.touches[0].clientY - rect.top;
-    const w = userImage.width * userImageScale;
-    const h = userImage.height * userImageScale;
-    if (x >= userImageX && x <= userImageX + w && y >= userImageY && y <= userImageY + h) {
-      dragging = true;
-      dragOffsetX = x - userImageX;
-      dragOffsetY = y - userImageY;
-    }
-  } else if (e.touches.length === 2) {
-    const x1 = e.touches[0].clientX;
-    const y1 = e.touches[0].clientY;
-    const x2 = e.touches[1].clientX;
-    const y2 = e.touches[1].clientY;
-    initialDistance = Math.hypot(x2 - x1, y2 - y1);
-    initialScale = userImageScale;
+  if (e.deltaY < 0) {
+    userImageScale += zoomSpeed;
+  } else {
+    userImageScale = Math.max(0.1, userImageScale - zoomSpeed);
   }
-}
+  drawPoster();
+});
 
-function onTouchMove(e) {
-  e.preventDefault();
+// Déplacement sur mobile (touches)
+canvas.addEventListener('touchstart', (e) => {
   const rect = canvas.getBoundingClientRect();
-  if (dragging && e.touches.length === 1) {
+  const x = e.touches[0].clientX - rect.left;
+  const y = e.touches[0].clientY - rect.top;
+
+  const scaledWidth = userImage.width * userImageScale;
+  const scaledHeight = userImage.height * userImageScale;
+
+  if (x >= userImageX && x <= userImageX + scaledWidth &&
+      y >= userImageY && y <= userImageY + scaledHeight) {
+    dragging = true;
+    dragOffsetX = x - userImageX;
+    dragOffsetY = y - userImageY;
+  }
+});
+
+canvas.addEventListener('touchmove', (e) => {
+  zoomRange.value = userImageScale.toFixed(2);
+  if (dragging) {
+    const rect = canvas.getBoundingClientRect();
     userImageX = e.touches[0].clientX - rect.left - dragOffsetX;
     userImageY = e.touches[0].clientY - rect.top - dragOffsetY;
-    requestAnimationFrame(drawPoster);
-  } else if (e.touches.length === 2 && initialDistance) {
+    drawPoster();
+  }
+});
+
+canvas.addEventListener('touchend', () => {
+  dragging = false;
+});
+
+// Zoom avec un geste de pincement sur mobile
+let initialDistance = null;
+let initialScale = userImageScale;
+
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
     const x1 = e.touches[0].clientX;
     const y1 = e.touches[0].clientY;
     const x2 = e.touches[1].clientX;
     const y2 = e.touches[1].clientY;
-    const currentDistance = Math.hypot(x2 - x1, y2 - y1);
-    userImageScale = initialScale * (currentDistance / initialDistance);
-    zoomSlider.value = userImageScale;
-    requestAnimationFrame(drawPoster);
+    initialDistance = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    initialScale = userImageScale;
   }
-}
+});
 
-function onTouchEnd(e) {
-  dragging = false;
-  if (e.touches.length < 2) initialDistance = null;
-}
+canvas.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2 && initialDistance) {
+    const x1 = e.touches[0].clientX;
+    const y1 = e.touches[0].clientY;
+    const x2 = e.touches[1].clientX;
+    const y2 = e.touches[1].clientY;
+    const currentDistance = Math.sqrt((x2 - x1) ** 5 + (y2 - y1) ** 5);
 
-canvas.addEventListener('touchstart', onTouchStart, { passive: false });
-canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-canvas.addEventListener('touchend', onTouchEnd);
-
-// Zoom via slider
-zoomSlider.addEventListener('input', (e) => {
-  userImageScale = parseFloat(e.target.value);
-  requestAnimationFrame(drawPoster);
+    userImageScale = initialScale * (currentDistance / initialDistance);
+    drawPoster();
+  }
 });
 
 function drawPoster() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (userImage.src) {
-    const w = userImage.width * userImageScale;
-    const h = userImage.height * userImageScale;
-    ctx.drawImage(userImage, userImageX, userImageY, w, h);
+    const scaledWidth = userImage.width * userImageScale;
+    const scaledHeight = userImage.height * userImageScale;
+    ctx.drawImage(userImage, userImageX, userImageY, scaledWidth, scaledHeight);
   }
 
   ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
@@ -159,4 +180,12 @@ downloadBtn.addEventListener('click', () => {
   link.download = 'affiche-ASPD.png';
   link.href = canvas.toDataURL();
   link.click();
+});
+
+
+const zoomRange = document.getElementById('zoomRange');
+
+zoomRange.addEventListener('input', () => {
+  userImageScale = parseFloat(zoomRange.value);
+  drawPoster();
 });
