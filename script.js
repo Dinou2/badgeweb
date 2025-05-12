@@ -24,22 +24,22 @@ photoInput.addEventListener('change', (e) => {
 
   reader.onload = function(evt) {
     userImage = new Image();
-    userImage.onload = () => {
-      // Réduire l'image à 30% de sa taille d'origine ou moins si elle est très grande
-      const maxWidth = canvas.width * 0.6;
-      const maxHeight = canvas.height * 0.6;
-      const scaleX = maxWidth / userImage.width;
-      const scaleY = maxHeight / userImage.height;
-      userImageScale = Math.min(scaleX, scaleY, 1); // pas plus grand que 1
-    
-      const scaledWidth = userImage.width * userImageScale;
-      const scaledHeight = userImage.height * userImageScale;
-      userImageX = (canvas.width - scaledWidth) / 2;
-      userImageY = (canvas.height - scaledHeight) / 2;
-    
-      zoomRange.value = userImageScale.toFixed(2);
-      drawPoster();
-    };
+userImage.onload = () => {
+  // Réduire l'image à 30% de sa taille d'origine ou moins si elle est très grande
+  const maxWidth = canvas.width * 0.6;
+  const maxHeight = canvas.height * 0.6;
+  const scaleX = maxWidth / userImage.width;
+  const scaleY = maxHeight / userImage.height;
+  userImageScale = Math.min(scaleX, scaleY, 1); // pas plus grand que 1
+
+  const scaledWidth = userImage.width * userImageScale;
+  const scaledHeight = userImage.height * userImageScale;
+  userImageX = (canvas.width - scaledWidth) / 2;
+  userImageY = (canvas.height - scaledHeight) / 2;
+
+  // zoomRange.value = userImageScale.toFixed(2);
+  drawPoster();
+};
     userImage.src = evt.target.result;
   };
 
